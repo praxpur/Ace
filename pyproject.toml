@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "course-hub"
+version = "0.1.0"
+description = "超星学习通与智慧树统一桌面客户端"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.13,<4.0"
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+py-modules = ["main", "gui_main", "treehouse_bridge"]
+packages = ["api", "treehouse"]
+package-dir = {treehouse = "src/treehouse"}
+
+[tool.setuptools.data-files]
+"share/chaoxing" = ["config_template.ini", "resource/font_map_table.json"]
+
+[project.scripts]
+chaoxing = "main:main"
+course-hub = "gui_main:main"
+
+[tool.setuptools.dynamic]
+dependencies = {file=["requirements.txt"]}
