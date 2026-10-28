@@ -7,11 +7,11 @@
       <el-menu default-active="1" @select="handleSelect" background-color="#304156" text-color="#bfcbd9" active-text-color="#409EFF">
         <el-menu-item index="1">
           <el-icon><Setting /></el-icon>
-          <span>账号与配置</span>
+          <span>超星账号与配置</span>
         </el-menu-item>
         <el-menu-item index="2">
           <el-icon><Reading /></el-icon>
-          <span>课程列表</span>
+          <span>超星课程列表</span>
         </el-menu-item>
         <el-menu-item index="3">
           <el-icon><Monitor /></el-icon>
