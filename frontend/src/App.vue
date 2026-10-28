@@ -2,7 +2,7 @@
   <el-container class="layout-container">
     <el-aside width="200px" class="aside">
       <div class="logo">
-        <h3>学习空间</h3>
+        <h3>分刷酱</h3>
       </div>
       <el-menu default-active="1" @select="handleSelect" background-color="#304156" text-color="#bfcbd9" active-text-color="#409EFF">
         <el-menu-item index="1">

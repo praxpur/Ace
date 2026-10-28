@@ -509,7 +509,7 @@ def main():
         print(f"Frontend not found at {dist_path}. Please build the Vue project first.")
         sys.exit(1)
 
-    window = webview.create_window('学习空间 · 超星 / 智慧树', url=dist_path, js_api=api, width=1120, height=780)
+    window = webview.create_window('分刷酱 · 超星 / 智慧树', url=dist_path, js_api=api, width=1120, height=780)
     webview.start(debug=False)
 
 

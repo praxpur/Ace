@@ -1,4 +1,4 @@
-# 学习空间 CourseHub
+# 分刷酱
 
 一个桌面窗口提供超星学习通和智慧树课程任务。界面沿用超星客户端的 Vue 3、Element Plus 和 PyWebView 设计；两个平台的运行逻辑各自保留，账号与登录态不互通。
 
@@ -22,7 +22,7 @@ python gui_main.py
 
 ## 构建 Windows 程序
 
-先运行前端构建，然后设置 `PLAYWRIGHT_BROWSERS_PATH` 指向已安装的 Playwright 浏览器目录，再执行 `pyinstaller --noconfirm --clean CourseHub.spec`。冻结程序打包 Chromium。当前仓库保留了源项目的测试与文档；两个平台的真实账号流程仍需在目标账号上验收。
+先运行前端构建，然后设置 `PLAYWRIGHT_BROWSERS_PATH` 指向已安装的 Playwright 浏览器目录，再执行 `pyinstaller --noconfirm --clean Fenshuajiang.spec`。冻结程序打包 Chromium。当前仓库保留了源项目的测试与文档；两个平台的真实账号流程仍需在目标账号上验收。
 
 ## 来源和许可
 

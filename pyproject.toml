@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "course-hub"
+name = "fenshuajiang"
 version = "0.1.0"
 description = "超星学习通与智慧树统一桌面客户端"
 readme = "README.md"
@@ -21,7 +21,7 @@ package-dir = {treehouse = "src/treehouse"}
 
 [project.scripts]
 chaoxing = "main:main"
-course-hub = "gui_main:main"
+fenshuajiang = "gui_main:main"
 
 [tool.setuptools.dynamic]
 dependencies = {file=["requirements.txt"]}
