@@ -78,7 +78,10 @@ def resource_title(text: str) -> str | None:
 
 
 class ZhihuishuAdapter:
-    def __init__(self, headless=False, poll_interval=0.2, profile=None):
+    def __init__(self, headless=False, poll_interval=0.2, profile=None, credentials=None,
+                 login_hook=None):
+        self.login_hook = login_hook
+        self.credentials = credentials or ("", "")
         self.headless = headless
         self.poll_interval = poll_interval
         self.profile = profile or SiteProfile()
@@ -87,6 +90,22 @@ class ZhihuishuAdapter:
     def _visible(locator) -> list:
         # Snapshot only: callers poll until explicit readiness before presenting it.
         return [item for item in locator.all() if item.is_visible()]
+
+    def autofill_login(self, scope) -> None:
+        """Fill only empty account/password boxes; captcha, agreement and submit stay manual."""
+        username, password = self.credentials
+        if not username and not password:
+            return
+        try:
+            for placeholder, value in (("请输入手机号或用户名", username), ("请输入密码", password)):
+                if not value:
+                    continue
+                box = scope.get_by_placeholder(placeholder).first
+                if box.count() and box.is_visible() and not box.input_value():
+                    box.fill(value, timeout=1000)
+        except Exception:
+            # Login page may be mid-render or on another tab; the user can type manually.
+            pass
 
     def course_records(self, scope) -> list[CatalogRecord]:
         records = []
@@ -316,16 +335,25 @@ class ZhihuishuAdapter:
                 stable_count = stable_count + 1 if key == stable_key else 1
                 stable_key = key
                 if stable_count >= 2:
+                    if self.login_hook:
+                        self.login_hook.close()
                     return ready
             else:
                 stable_key, stable_count = None, 0
             login = any(probe.kind == PageKind.LOGIN for probe in probes)
+            if login and (not self.headless or self.login_hook):
+                for probe in probes:
+                    if probe.kind == PageKind.LOGIN:
+                        self.autofill_login(probe.scope)
+            if self.login_hook and not login and last_phase == Phase.WAITING_LOGIN:
+                self.login_hook.close()
             seen_login |= login
             phase = Phase.WAITING_LOGIN if login else loading_phase
             if phase != last_phase:
                 if login:
-                    phase_callback(phase, "请在打开的浏览器中手动登录并完成验证码，程序正在等待。")
-                    if self.headless:
+                    phase_callback(phase, "请在软件弹出的登录窗口中完成验证码并点击登录。" if self.login_hook
+                                   else "请在打开的浏览器中手动登录并完成验证码，程序正在等待。")
+                    if self.headless and not self.login_hook:
                         raise LoginRequired(
                             "登录态不可用。请用可见浏览器完成人工登录，再选择保存的登录态进行无头运行。"
                         )
@@ -337,6 +365,13 @@ class ZhihuishuAdapter:
                     raise LoginRequired("尚未完成登录，等待已超时。可增加登录等待时间后重试。")
                 raise PageNotReady("页面未在限定时间内显示课程、资源或播放器。请查看诊断记录。")
             # Pump Playwright's event loop while the SPA or popup is changing.
+            if login and self.login_hook:
+                login_page = next(p.page for p in probes if p.kind == PageKind.LOGIN)
+                try:
+                    self.login_hook.pump(login_page)
+                    continue
+                except Exception:
+                    token.check()
             try:
                 pages[-1].wait_for_timeout(self.poll_interval * 1000)
             except Exception:

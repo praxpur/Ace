@@ -1,113 +1,77 @@
-"""生成扁平化 Material Design 3 风格图标。
+"""生成「分刷酱」图标：对角“分”开的两色圆角方块（两个平台合一）+ 白色对勾（刷完）+ 星光。
 
-输出到 packaging/assets/：logo.svg（矢量母版）、logo.png（1024px）、
-app.ico（多尺寸）、logo_preview.png（尺寸检查图）。
+输出到 packaging/assets/：logo.svg、logo.png(1024)、app.ico、logo_preview.png。
+同时同步 gui_dist/favicon.svg 与 frontend/public/favicon.svg。
 用法：python packaging/build_logo_ico.py
 """
 from pathlib import Path
 from PIL import Image, ImageDraw
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 ASSETS = HERE / "assets"
-CANVAS = 1024
-SCALE = 4
-PRIMARY = "#6750A4"
-ON_PRIMARY = "#EADDFF"
-TERTIARY = "#EFB8C8"
+CANVAS, SCALE = 1024, 4
 SIZES = (16, 24, 32, 48, 64, 128, 256)
+BLUE, TEAL, WHITE, PINK = "#3730A3", "#14B8A6", "#FFFFFF", "#FDE68A"
+RECT = (48, 48, 976, 976)
+RADIUS = 220
+# 对角线：左下半 BLUE（右上半 TEAL），线从右上角到左下角附近
+SPLIT = [(976, 48), (976, 976), (48, 976)]  # 右下三角（用 TEAL 覆盖）
+CHECK = [(268, 540), (452, 724), (780, 340)]
+STAR = [(770, 130), (803, 226), (899, 259), (803, 292), (770, 388), (737, 292), (641, 259), (737, 226)]
+CHECK_W = 96
 
 
-def cubic(p0, p1, p2, p3, steps=24):
-    points = []
-    for i in range(1, steps + 1):
-        t = i / steps
-        u = 1 - t
-        points.append((
-            u**3 * p0[0] + 3 * u**2 * t * p1[0] + 3 * u * t**2 * p2[0] + t**3 * p3[0],
-            u**3 * p0[1] + 3 * u**2 * t * p1[1] + 3 * u * t**2 * p2[1] + t**3 * p3[1],
-        ))
-    return points
+def s(pts):
+    return [(x * SCALE, y * SCALE) for x, y in pts]
 
 
-def book_page(mirror=False):
-    def p(x, y):
-        return (CANVAS - x if mirror else x, y)
-
-    start = p(252, 400)
-    points = [start]
-    current = start
-    segments = [
-        (p(342, 382), p(434, 402), p(512, 462)),
-    ]
-    for c1, c2, end in segments:
-        points.extend(cubic(current, c1, c2, end))
-        current = end
-    points.append(p(512, 768))
-    current = p(512, 768)
-    for c1, c2, end in [
-        (p(430, 710), p(344, 688), p(240, 704)),
-        (p(222, 707), p(208, 693), p(208, 675)),
-    ]:
-        points.extend(cubic(current, c1, c2, end))
-        current = end
-    points.append(p(208, 440))
-    current = p(208, 440)
-    points.extend(cubic(current, p(208, 420), p(226, 406), start))
-    return points
+def render():
+    n = CANVAS * SCALE
+    mask = Image.new("L", (n, n), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([v * SCALE for v in RECT], radius=RADIUS * SCALE, fill=255)
+    base = Image.new("RGBA", (n, n), BLUE)
+    ImageDraw.Draw(base).polygon(s(SPLIT), fill=TEAL)
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    img.paste(base, mask=mask)
+    d = ImageDraw.Draw(img)
+    d.line(s(CHECK), fill=WHITE, width=CHECK_W * SCALE, joint="curve")
+    r = CHECK_W * SCALE // 2
+    for x, y in (CHECK[0], CHECK[-1]):
+        d.ellipse((x * SCALE - r, y * SCALE - r, x * SCALE + r, y * SCALE + r), fill=WHITE)
+    d.polygon(s(STAR), fill=PINK)
+    return img.resize((CANVAS, CANVAS), Image.Resampling.LANCZOS)
 
 
-def sparkle():
-    return [
-        (512, 174), (540, 254), (620, 282), (540, 310),
-        (512, 390), (484, 310), (404, 282), (484, 254),
-    ]
-
-
-def scaled(points):
-    return [(round(x * SCALE), round(y * SCALE)) for x, y in points]
-
-
-def render_png():
-    image = Image.new("RGBA", (CANVAS * SCALE, CANVAS * SCALE), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle(
-        (48 * SCALE, 48 * SCALE, 976 * SCALE, 976 * SCALE),
-        radius=220 * SCALE,
-        fill=PRIMARY,
-    )
-    draw.polygon(scaled(book_page()), fill=ON_PRIMARY)
-    draw.polygon(scaled(book_page(mirror=True)), fill=ON_PRIMARY)
-    draw.polygon(scaled(sparkle()), fill=TERTIARY)
-    image = image.resize((CANVAS, CANVAS), Image.Resampling.LANCZOS)
-    image.save(ASSETS / "logo.png")
-    return image
-
-
-def write_svg():
-    left = "M252 400 C342 382 434 402 512 462 L512 768 C430 710 344 688 240 704 C222 707 208 693 208 675 L208 440 C208 420 226 406 252 400 Z"
-    star = " ".join(f"{x},{y}" for x, y in sparkle())
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect x="48" y="48" width="928" height="928" rx="220" fill="{PRIMARY}"/>
-  <path d="{left}" fill="{ON_PRIMARY}"/>
-  <path d="{left}" transform="translate(1024 0) scale(-1 1)" fill="{ON_PRIMARY}"/>
-  <polygon points="{star}" fill="{TERTIARY}"/>
+def svg():
+    pts = lambda p: " ".join(f"{x},{y}" for x, y in p)
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs><clipPath id="c"><rect x="48" y="48" width="928" height="928" rx="{RADIUS}"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="1024" height="1024" fill="{BLUE}"/>
+    <polygon points="{pts(SPLIT)}" fill="{TEAL}"/>
+  </g>
+  <polyline points="{pts(CHECK)}" fill="none" stroke="{WHITE}" stroke-width="{CHECK_W}" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="{pts(STAR)}" fill="{PINK}"/>
 </svg>
 '''
-    (ASSETS / "logo.svg").write_text(svg, encoding="utf-8")
 
 
 def main():
     ASSETS.mkdir(parents=True, exist_ok=True)
-    write_svg()
-    image = render_png()
-    image.save(ASSETS / "app.ico", format="ICO", sizes=[(size, size) for size in SIZES])
+    text = svg()
+    (ASSETS / "logo.svg").write_text(text, encoding="utf-8")
+    for p in (ROOT / "gui_dist" / "favicon.svg", ROOT / "frontend" / "public" / "favicon.svg"):
+        if p.parent.exists():
+            p.write_text(text, encoding="utf-8")
+    image = render()
+    image.save(ASSETS / "logo.png")
+    image.save(ASSETS / "app.ico", format="ICO", sizes=[(z, z) for z in SIZES])
     preview = Image.new("RGBA", (1120, 360), "#F7F2FA")
     for x, size in [(32, 256), (336, 128), (512, 64), (624, 48), (720, 32), (800, 24), (872, 16)]:
-        icon = image.resize((size, size), Image.Resampling.LANCZOS)
-        preview.alpha_composite(icon, (x, 52 + (256 - size) // 2))
+        preview.alpha_composite(image.resize((size, size), Image.Resampling.LANCZOS), (x, 52 + (256 - size) // 2))
     preview.convert("RGB").save(ASSETS / "logo_preview.png")
-    for name in ("logo.svg", "logo.png", "app.ico", "logo_preview.png"):
-        print(f"Generated: {ASSETS / name}")
+    print("done")
 
 
 if __name__ == "__main__":

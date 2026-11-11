@@ -4,6 +4,7 @@ from .adapter import CatalogRecord, ZhihuishuAdapter
 from .cancellation import CancellationToken
 from .config import Settings
 from .diagnostics import Diagnostics
+from .login_relay import RELAY
 from .errors import CatalogUnavailable, DependencyError, NavigationError, PlayerError, UserCancelled
 from .models import Choice, Event, Outcome, PageKind, Phase
 from .network import network_error_message
@@ -28,7 +29,9 @@ class Workflow:
         self.emit_callback = emit
         self.token = token or CancellationToken()
         self.adapter = adapter or ZhihuishuAdapter(
-            settings.headless, settings.poll_interval
+            settings.headless, settings.poll_interval,
+            credentials=(settings.username, settings.password),
+            login_hook=RELAY if settings.embedded_login else None,
         )
         self.diagnostics = None
         self.last_phase = None
@@ -213,6 +216,8 @@ class Workflow:
 
     def run(self) -> Outcome:
         self.diagnostics = Diagnostics(self.settings.artifacts_dir)
+        if self.settings.embedded_login:
+            RELAY.bind(self.emit_callback)
         context = browser = None
         try:
             self.phase(Phase.STARTING, "正在启动浏览器。")
@@ -227,9 +232,14 @@ class Workflow:
                         launch_options['args'] = ['--no-proxy-server']
                         self.emit('log', message='本次浏览器使用直连，不使用系统代理。')
                     browser = playwright.chromium.launch(**launch_options)
-                    context = browser.new_context(
-                        storage_state=str(self.settings.state_path) if self.settings.state_path else None
-                    )
+                    context_options = dict(
+                        storage_state=str(self.settings.state_path) if self.settings.state_path else None)
+                    if self.settings.embedded_login:
+                        # Headless Chromium advertises HeadlessChrome; present the normal UA.
+                        context_options['user_agent'] = (
+                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                            f'(KHTML, like Gecko) Chrome/{browser.version} Safari/537.36')
+                    context = browser.new_context(**context_options)
                     context.set_default_timeout(self.settings.page_timeout * 1000)
                     context.set_default_navigation_timeout(self.settings.page_timeout * 1000)
                     page = context.new_page()
@@ -274,4 +284,6 @@ class Workflow:
             self.phase(Phase.ERROR, message)
             return self.finish("error", message)
         finally:
+            if self.settings.embedded_login:
+                RELAY.close()
             self.diagnostics.close()

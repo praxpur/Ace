@@ -2,8 +2,8 @@
 # PyInstaller --version-file：exe 属性页版本信息
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(3, 1, 4, 0),
-    prodvers=(3, 1, 4, 0),
+    filevers=(0, 1, 0, 0),
+    prodvers=(0, 1, 0, 0),
     mask=0x3F,
     flags=0x0,
     OS=0x40004,
@@ -15,14 +15,14 @@ VSVersionInfo(
     StringFileInfo([
       StringTable(
         '080404B0',
-        [StringStruct('CompanyName', 'chaoxing-gui contributors'),
-         StringStruct('FileDescription', '超星学习通桌面客户端'),
-         StringStruct('FileVersion', '3.1.4.0'),
-         StringStruct('InternalName', 'ChaoxingDesktop'),
+        [StringStruct('CompanyName', '分刷酱'),
+         StringStruct('FileDescription', '分刷酱'),
+         StringStruct('FileVersion', '0.1.0.0'),
+         StringStruct('InternalName', '分刷酱'),
          StringStruct('LegalCopyright', 'GPL-3.0 License'),
-         StringStruct('OriginalFilename', 'ChaoxingDesktop.exe'),
-         StringStruct('ProductName', 'ChaoxingDesktop'),
-         StringStruct('ProductVersion', '3.1.4.0')])
+         StringStruct('OriginalFilename', '分刷酱.exe'),
+         StringStruct('ProductName', '分刷酱'),
+         StringStruct('ProductVersion', '0.1.0.0')])
     ]),
     VarFileInfo([VarStruct('Translation', [2052, 1200])])
   ]

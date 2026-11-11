@@ -213,3 +213,43 @@ class BrokerTests(unittest.TestCase):
         self.broker.resolve(request, [])
         thread.join(1)
         self.assertIsInstance(self.result.get(timeout=1), ConfigurationError)
+
+
+class TreehouseBridgeTests(unittest.TestCase):
+    def test_normalize_treehouse_options_snaps_speed_and_persists(self):
+        from treehouse_bridge import TreehouseBridge, normalize_treehouse_options
+
+        opts = normalize_treehouse_options({"speed": 1.6, "connection_mode": "invalid"})
+        self.assertEqual(opts["speed"], 1.5)
+        self.assertEqual(opts["connection_mode"], "system")
+
+        class DummyBridge(TreehouseBridge):
+            def __init__(self):
+                super().__init__()
+                self._config = {"treehouse": {}}
+                self.saved = 0
+
+            def _save_config(self):
+                self.saved += 1
+
+        bridge = DummyBridge()
+        res = bridge.treehouse_save_config({"speed": 2.0, "connection_mode": "direct", "remember": False})
+        self.assertTrue(res["success"])
+        self.assertEqual(bridge.saved, 1)
+        self.assertEqual(bridge._config["treehouse"]["speed"], 2.0)
+        self.assertEqual(bridge._config["treehouse"]["connection_mode"], "direct")
+        self.assertFalse(bridge._config["treehouse"]["remember"])
+        defaults = bridge.treehouse_defaults()
+        self.assertEqual(defaults["data"]["speed"], 2.0)
+        self.assertEqual(defaults["data"]["connection_mode"], "direct")
+
+    def test_headless_without_state_file_is_blocked_early(self):
+        from treehouse_bridge import TreehouseBridge
+
+        bridge = TreehouseBridge()
+        with tempfile.TemporaryDirectory() as folder:
+            missing_state = str(Path(folder) / "missing_auth.json")
+            res = bridge.treehouse_start({"headless": True, "embedded_login": False, "state_path": missing_state})
+            self.assertFalse(res["success"])
+            self.assertIn("尚未生成登录态文件", res["msg"])
+

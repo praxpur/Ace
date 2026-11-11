@@ -15,7 +15,7 @@ from loguru import logger
 import traceback
 import builtins
 import tqdm
-from treehouse_bridge import TreehouseBridge
+from treehouse_bridge import TreehouseBridge, normalize_treehouse_options
 
 # 配置文件放在 exe（或脚本）所在目录，避免 cwd 不可写时静默失败
 if getattr(sys, 'frozen', False):
@@ -240,7 +240,8 @@ class Api(TreehouseBridge):
                 "provider": "",
                 "url": "",
                 "tg_chat_id": ""
-            }
+            },
+            "treehouse": normalize_treehouse_options()
         }
         self._load_config()
         self._stop_event = threading.Event()
@@ -252,7 +253,8 @@ class Api(TreehouseBridge):
             logs_copy = pending_logs[:]
             pending_logs.clear()
             progress_copy = progress_state.copy()
-        return {"success": True, "logs": logs_copy, "progress": progress_copy}
+        running = bool(self._running_thread and self._running_thread.is_alive())
+        return {"success": True, "running": running, "logs": logs_copy, "progress": progress_copy}
 
     def _load_config(self):
         if os.path.exists(GUI_CONFIG_PATH):
@@ -294,6 +296,18 @@ class Api(TreehouseBridge):
             return {"success": True, "msg": f"{test_tiku.name} 连接测试成功！"}
         except Exception as e:
             return {"success": False, "msg": f"测试异常: {e}"}
+
+    def save_config_only(self, config_str):
+        try:
+            new_config = json.loads(config_str)
+            for key in self._config:
+                if key in new_config and isinstance(new_config[key], dict):
+                    self._config[key].update(new_config[key])
+            self._save_config()
+            apply_log_level(bool(self._config["common"].get("verbose", False)))
+            return {"success": True, "msg": "配置已保存"}
+        except Exception as e:
+            return {"success": False, "msg": str(e)}
 
     def save_config_and_login(self, config_str):
         try:
@@ -367,6 +381,8 @@ class Api(TreehouseBridge):
             return {"success": False, "msg": "当前已有任务正在运行，请先停止"}
 
         self._stop_event.clear()
+        with ui_lock:
+            progress_state.clear()
         
         self._running_thread = threading.Thread(target=self._run_tasks_thread, args=(course_ids,))
         self._running_thread.start()
@@ -489,6 +505,35 @@ def setup_logger():
     sys.stdout = StdoutRedirector()
     sys.stderr = StdoutRedirector()
 
+TITLEBAR_COLOR = '#304156'  # 与侧边栏同色，让原生标题栏和应用融为一体
+TITLEBAR_TEXT = '#E5EAF3'
+
+
+def apply_titlebar_theme(window):
+    """Windows 11 上把原生标题栏/边框染成侧边栏颜色；旧系统静默忽略。"""
+    if sys.platform != 'win32':
+        return
+    try:
+        import ctypes
+        from ctypes import wintypes
+        hwnd = int(window.native.Handle.ToInt32())
+
+        def colorref(hex_color):
+            r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+            return wintypes.DWORD(r | (g << 8) | (b << 16))
+
+        set_attr = ctypes.windll.dwmapi.DwmSetWindowAttribute
+        for attribute, value in (
+            (20, wintypes.DWORD(1)),                 # 深色标题栏（按钮图标变白）
+            (34, colorref(TITLEBAR_COLOR)),          # 边框
+            (35, colorref(TITLEBAR_COLOR)),          # 标题栏背景
+            (36, colorref(TITLEBAR_TEXT)),           # 标题文字
+        ):
+            set_attr(wintypes.HWND(hwnd), attribute, ctypes.byref(value), ctypes.sizeof(value))
+    except Exception as exc:
+        print('标题栏主题设置失败:', exc)
+
+
 def main():
     setup_logger()
 
@@ -509,8 +554,13 @@ def main():
         print(f"Frontend not found at {dist_path}. Please build the Vue project first.")
         sys.exit(1)
 
-    window = webview.create_window('分刷酱 · 超星 / 智慧树', url=dist_path, js_api=api, width=1120, height=780)
-    webview.start(debug=False)
+    window = webview.create_window(
+        '分刷酱', url=dist_path, js_api=api, width=1120, height=780,
+        min_size=(900, 620), background_color=TITLEBAR_COLOR,
+    )
+    window.events.shown += lambda: apply_titlebar_theme(window)
+    icon = os.path.join(base_dir, 'packaging', 'assets', 'app.ico')
+    webview.start(debug=False, icon=icon if os.path.isfile(icon) else None)
 
 
 if __name__ == '__main__':

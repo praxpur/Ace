@@ -32,10 +32,10 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='Fenshuajiang',
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='分刷酱',
           debug=False, bootloader_ignore_signals=False, strip=False, upx=False,
           console=False, disable_windowed_traceback=False, argv_emulation=False,
           target_arch=None, codesign_identity=None, entitlements_file=None,
-          icon=['packaging/assets/app.ico'])
+          icon=['packaging/assets/app.ico'], version='packaging/version_info.txt')
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False,
-               upx_exclude=[], name='Fenshuajiang')
+               upx_exclude=[], name='分刷酱')

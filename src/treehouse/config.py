@@ -1,6 +1,6 @@
 import os
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -40,6 +40,9 @@ class Settings:
     artifacts_dir: Path = PROJECT_ROOT / "artifacts"
     browser_executable: Path | None = None
     connection_mode: str = 'system'
+    embedded_login: bool = False
+    username: str = ''
+    password: str = field(default='', repr=False)
 
     def validate(self) -> "Settings":
         parsed = urlsplit(self.start_url)
@@ -55,7 +58,7 @@ class Settings:
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 < value < float("inf"):
                 raise ConfigurationError(f"{name} 必须是有限正数。")
-        for name in ("headless", "muted"):
+        for name in ("headless", "muted", "embedded_login"):
             if type(getattr(self, name)) is not bool:
                 raise ConfigurationError(f"{name} 必须是布尔值。")
         if (type(self.playback_rate) not in (int, float)
