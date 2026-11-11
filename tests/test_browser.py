@@ -11,7 +11,9 @@ from treehouse.config import Settings
 from treehouse.errors import LoginRequired, NavigationError, PageNotReady, UserCancelled
 from treehouse.models import PageKind, Phase
 from treehouse.workflow import Workflow
-from tests.fixture_server import CENTER, RESOURCES, VIDEO, SHARED, FixtureServer
+
+if os.getenv("TREE_RUN_BROWSER_TESTS") == "1":
+    from tests.fixture_server import CENTER, RESOURCES, VIDEO, SHARED, FixtureServer
 
 
 @unittest.skipUnless(os.getenv("TREE_RUN_BROWSER_TESTS") == "1", "use --browser")

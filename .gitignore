@@ -146,6 +146,7 @@ cookies.txt
 config.ini
 chaoxing.log
 config*.ini
+!config_template.ini
 .chaoxing.log
 ./config.ini
 ./chaoxing.log
@@ -164,6 +165,9 @@ gui_config.json
 .runtime/
 artifacts/
 *.sha256
+
+# Frontend dependencies
+node_modules/
 
 # 图标尺寸检查图（由 packaging/build_logo_ico.py 生成）
 packaging/assets/logo_preview.png
