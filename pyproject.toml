@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fenshuajiang"
 version = "0.1.0"
-description = "超星学习通与智慧树统一桌面客户端"
+description = "Ace（分刷酱）· 超星学习通与智慧树统一桌面客户端"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.13,<4.0"
 dynamic = ["dependencies"]
 
 [tool.setuptools]
-py-modules = ["main", "gui_main", "treehouse_bridge"]
+py-modules = ["main", "gui_main", "treehouse_bridge", "desktop_tray"]
 packages = ["api", "treehouse"]
 package-dir = {treehouse = "src/treehouse"}
 

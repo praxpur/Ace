@@ -1,9 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <defs><clipPath id="c"><rect x="48" y="48" width="928" height="928" rx="220"/></clipPath></defs>
-  <g clip-path="url(#c)">
-    <rect width="1024" height="1024" fill="#3730A3"/>
-    <polygon points="976,48 976,976 48,976" fill="#14B8A6"/>
-  </g>
-  <polyline points="268,540 452,724 780,340" fill="none" stroke="#FFFFFF" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/>
-  <polygon points="770,130 803,226 899,259 803,292 770,388 737,292 641,259 737,226" fill="#FDE68A"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect x="4" y="4" width="120" height="120" rx="31" fill="#142E2D"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="30.5" stroke="#A8DCC2" stroke-opacity=".18"/>
+  <polygon points="27,32 59,40 59,96 27,87" fill="#EFF4E6"/>
+  <polygon points="66,40 101,30 101,85 66,96" fill="#A8DCC2"/>
+  <polygon points="37,29 44,31 44,53 40.5,49 37,51" fill="#E8BB71"/>
+  <polygon points="77,50 77,75 92,62" fill="#142E2D" stroke="#142E2D" stroke-width="3" stroke-linejoin="round"/>
 </svg>

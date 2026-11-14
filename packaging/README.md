@@ -4,7 +4,7 @@
 
 | 文件 | 用途 |
 |---|---|
-| `assets/logo.svg` | 应用图标的矢量母版（扁平化 Material Design 3 风格） |
+| `assets/logo.svg` | 应用图标的矢量母版（书页、播放符号与书签） |
 | `assets/logo.png` | 1024×1024 图标位图母版 |
 | `assets/app.ico` | 写入 exe 的多尺寸图标（16/24/32/48/64/128/256） |
 | `assets/logo_preview.png` | 各尺寸图标检查图，由脚本生成，不参与打包 |
@@ -29,7 +29,7 @@ cd frontend
 npm ci
 npm run build
 cd ..
-pyinstaller --noconfirm --clean ChaoxingDesktop.spec
+pyinstaller --noconfirm --clean Fenshuajiang.spec
 ```
 
-`ChaoxingDesktop.spec` 使用相对路径引用本目录的 `assets/app.ico` 和 `version_info.txt`，因此打包命令需在项目根目录执行。
+`Fenshuajiang.spec` 使用相对路径引用本目录的 `assets/app.ico` 和 `version_info.txt`，因此打包命令需在项目根目录执行。

@@ -22,7 +22,8 @@ jobs:
         with:
           python-version: '3.13'
       - run: python -m pip install -r requirements.txt
-      - run: python -m compileall -q gui_main.py treehouse_bridge.py api src/treehouse
-      - run: python -m unittest tests.test_appearance tests.test_selection tests.test_filter_courses -q
+      - run: python -m compileall -q gui_main.py treehouse_bridge.py desktop_tray.py api src/treehouse
+      - run: python -m unittest tests.test_appearance tests.test_selection tests.test_filter_courses tests.test_desktop_tray tests.test_theme.ThemeConfigTest -q
         env:
           PYTHONPATH: src
+      - run: python tools/audit/publication_guard.py

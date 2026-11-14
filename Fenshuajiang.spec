@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('gui_dist', 'gui_dist'), ('resource', 'resource'), ('TREEHOUSE-LICENSE', '.')]
+datas = [('gui_dist', 'gui_dist'), ('resource', 'resource'), ('TREEHOUSE-LICENSE', '.'),
+         ('packaging/assets/app.ico', 'packaging/assets')]
 binaries = []
 hiddenimports = ['chardet']
 for package in ('webview', 'pythonnet', 'cv2', 'playwright'):

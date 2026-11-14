@@ -1,14 +1,14 @@
 <template>
   <el-container class="layout-container">
-    <el-aside width="220px" class="aside">
+    <el-aside width="232px" class="aside">
       <div class="logo">
-        <h3><img src="/favicon.svg" class="logo-icon" alt="" />分刷酱</h3>
-        <span class="logo-sub">超星 / 智慧树刷课助手</span>
+        <img src="/favicon.svg" class="logo-icon" alt="分刷酱 Logo" />
+        <div><h3>分刷酱<span class="brand-version">ACE</span></h3><span class="logo-sub">课程任务，一处管理</span></div>
       </div>
 
       <!-- 平台切换器 -->
       <div class="platform-switcher">
-        <div class="switcher-label">当前刷课平台</div>
+        <div class="switcher-label">学习平台 <span>WORKSPACE</span></div>
         <div class="switcher-buttons">
           <button
             type="button"
@@ -44,9 +44,6 @@
       <el-menu
         :default-active="activeIndex"
         class="side-menu"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
         @select="handleSelect"
       >
         <el-menu-item index="1">
@@ -90,22 +87,67 @@
         </el-menu-item>
       </el-menu>
 
+      <button class="developer-entry" @click="aboutOpen = true" aria-label="关于与开发者">
+        <span class="developer-avatar">P</span><span class="developer-entry-text"><strong>praxpur</strong><small>关于分刷酱与开发者</small></span><span class="entry-arrow">↗</span>
+      </button>
       <div class="theme-toggle">
-        <el-switch
-          v-model="isDark"
-          inline-prompt
-          :active-icon="Moon"
-          :inactive-icon="Sunny"
-          @change="toggleTheme"
-        />
-        <span class="theme-label">{{ isDark ? '夜间模式' : '日间模式' }}</span>
+        <span class="theme-label">主题</span>
+        <el-select v-model="themeMode" aria-label="主题模式" @change="changeTheme" style="width: 130px">
+          <el-option label="跟随系统" value="system" />
+          <el-option label="浅色模式" value="light" />
+          <el-option label="深色模式" value="dark" />
+        </el-select>
       </div>
     </el-aside>
 
     <el-container>
       <el-main class="main-content">
+        <header class="workspace-header" :key="platform + activeIndex">
+          <div><div class="workspace-breadcrumb">{{ platform === 'chaoxing' ? '超星学习通' : '智慧树 / 知到' }}<span>/</span>工作空间</div><h1>{{ pageTitle }}</h1><p>{{ pageDescription }}</p></div>
+          <div class="workspace-status" :class="{ 'is-running': currentPlatformRunning }"><span class="connection-dot"></span>{{ workspaceStatus }}</div>
+        </header>
+        <AboutDialog v-model="aboutOpen" @external="openExternal" />
+          <!-- 智慧树应用内登录窗口：镜像无头浏览器登录页，验证码由用户手动完成 -->
+          <el-dialog
+            v-model="thLoginOpen"
+            title="智慧树登录 · 请完成验证码并点击登录"
+            width="1000px"
+            top="4vh"
+            :close-on-click-modal="false"
+            :close-on-press-escape="false"
+            :show-close="false"
+            destroy-on-close
+          >
+            <div class="th-login-hint">
+              账号密码已自动填入。请勾选用户协议、完成验证码后点击页面上的“登录”，成功后此窗口会自动关闭。
+            </div>
+            <div
+              class="th-login-stage"
+              tabindex="0"
+              @keydown.prevent="onThLoginKey"
+            >
+              <img
+                v-if="thLoginImage"
+                ref="thLoginImg"
+                :src="thLoginImage"
+                class="th-login-frame"
+                draggable="false"
+                @mousedown.prevent="onThLoginMouse('down', $event)"
+                @mousemove="onThLoginMouse('move', $event)"
+                @mouseup="onThLoginMouse('up', $event)"
+                @mouseleave="onThLoginMouse('up', $event)"
+                @wheel.prevent="onThLoginWheel"
+                @dragstart.prevent
+              />
+              <div v-else class="th-login-loading">正在加载登录页…</div>
+            </div>
+            <template #footer>
+              <el-button @click="stopThTask">取消连接</el-button>
+            </template>
+          </el-dialog>
+
         <!-- ==================== 1. 账号与配置视图 ==================== -->
-        <div v-show="activeIndex === '1'">
+        <div v-show="activeIndex === '1'" class="workspace-page">
           <!-- 超星配置卡片 -->
           <el-card v-show="platform === 'chaoxing'" shadow="never">
             <template #header>
@@ -405,45 +447,6 @@
             </div>
           </el-card>
 
-          <!-- 智慧树应用内登录窗口：镜像无头浏览器登录页，验证码由用户手动完成 -->
-          <el-dialog
-            v-model="thLoginOpen"
-            title="智慧树登录 · 请完成验证码并点击登录"
-            width="1000px"
-            top="4vh"
-            :close-on-click-modal="false"
-            :close-on-press-escape="false"
-            :show-close="false"
-            destroy-on-close
-          >
-            <div class="th-login-hint">
-              账号密码已自动填入。请勾选用户协议、完成验证码后点击页面上的“登录”，成功后此窗口会自动关闭。
-            </div>
-            <div
-              class="th-login-stage"
-              tabindex="0"
-              @keydown.prevent="onThLoginKey"
-            >
-              <img
-                v-if="thLoginImage"
-                ref="thLoginImg"
-                :src="thLoginImage"
-                class="th-login-frame"
-                draggable="false"
-                @mousedown.prevent="onThLoginMouse('down', $event)"
-                @mousemove="onThLoginMouse('move', $event)"
-                @mouseup="onThLoginMouse('up', $event)"
-                @mouseleave="onThLoginMouse('up', $event)"
-                @wheel.prevent="onThLoginWheel"
-                @dragstart.prevent
-              />
-              <div v-else class="th-login-loading">正在加载登录页…</div>
-            </div>
-            <template #footer>
-              <el-button @click="stopThTask">取消连接</el-button>
-            </template>
-          </el-dialog>
-
           <!-- 智慧树配置卡片 (完全对齐超星配置样式) -->
           <el-card v-show="platform === 'treehouse'" shadow="never">
             <template #header>
@@ -564,7 +567,7 @@
         </div>
 
         <!-- ==================== 2. 课程与目录视图 ==================== -->
-        <div v-show="activeIndex === '2'">
+        <div v-show="activeIndex === '2'" class="workspace-page">
           <!-- 超星课程列表卡片 -->
           <el-card v-show="platform === 'chaoxing'" shadow="never">
             <template #header>
@@ -815,7 +818,7 @@
         </div>
 
         <!-- ==================== 3. 运行控制面板视图 ==================== -->
-        <div v-show="activeIndex === '3'" class="dashboard">
+        <div v-show="activeIndex === '3'" class="dashboard workspace-page">
           <!-- 当前进度卡片 (双平台完全统一) -->
           <el-card shadow="never" style="margin-bottom: 20px">
             <template #header>
@@ -961,7 +964,7 @@
             <div class="log-container" ref="logContainer">
               <div v-if="activeLogs.length === 0" class="log-empty">暂无控制台日志输出...</div>
               <div v-for="(log, index) in activeLogs" :key="index" class="log-item">
-                <span style="color: #409eff">[{{ log.time }}]</span> {{ log.msg }}
+                <span>[{{ log.time }}]</span> {{ log.msg }}
               </div>
             </div>
           </el-card>
@@ -974,7 +977,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Moon, Sunny, Setting, Reading, Monitor } from '@element-plus/icons-vue'
+import { Setting, Reading, Monitor } from '@element-plus/icons-vue'
+import { isThemeMode, setTheme, themeMode, type ThemeMode } from './theme'
+import AboutDialog from './AboutDialog.vue'
 
 type LogEntry = { time: string; msg: string }
 type ThChoice = { key: string; label: string; detail?: string }
@@ -1017,12 +1022,16 @@ const TH_PHASE_LABELS: Record<string, string> = {
 
 const TH_VALID_RATES = [1, 1.25, 1.5, 1.75, 2, 3, 4]
 
-// 主题切换（启动时 main.ts 已从 localStorage 恢复）
-const isDark = ref(document.documentElement.classList.contains('dark'))
-const toggleTheme = (val: string | number | boolean) => {
-  const dark = Boolean(val)
-  document.documentElement.classList.toggle('dark', dark)
-  localStorage.setItem('theme', dark ? 'dark' : 'light')
+// Browser storage is only a startup cache; desktop preferences live in gui_config.json.
+const changeTheme = async (mode: ThemeMode) => {
+  setTheme(mode)
+  config.value.appearance.theme = mode
+  try {
+    const res = await pyApi('save_config_only', JSON.stringify({ appearance: { theme: mode } }))
+    if (!res?.success) ElMessage.error(res?.msg || '主题配置保存失败')
+  } catch {
+    ElMessage.error('主题配置保存失败')
+  }
 }
 
 // 顶层平台与三级菜单状态
@@ -1030,6 +1039,14 @@ const platform = ref<'chaoxing' | 'treehouse'>('chaoxing')
 const activeIndex = ref('1')
 const activeConfigTab = ref('common')
 const activeThConfigTab = ref('common')
+const aboutOpen = ref(false)
+const pageTitle = computed(() => ({ '1': '准备好，开始学习', '2': '你的课程与目录', '3': '每一步进度，都看得见' })[activeIndex.value])
+const pageDescription = computed(() => ({ '1': '连接你的学习账号，按自己的节奏安排课程任务。', '2': '选择课程、查看目录，把要完成的内容排进队列。', '3': '在这里查看任务状态、播放进度与运行记录。' })[activeIndex.value])
+const workspaceStatus = computed(() => {
+  if (currentPlatformRunning.value) return '任务进行中'
+  if (platform.value === 'chaoxing') return courses.value.length ? `${courses.value.length} 门课程已就绪` : '等待连接账号'
+  return thOptions.value.has_state ? '已保存登录状态' : '等待连接账号'
+})
 
 const switchPlatform = (target: 'chaoxing' | 'treehouse') => {
   platform.value = target
@@ -1044,6 +1061,7 @@ const loadingCourses = ref(false)
 const cxRunning = ref(false)
 
 const config = ref({
+  appearance: { theme: themeMode.value },
   common: {
     username: '',
     password: '',
@@ -1158,7 +1176,11 @@ const thLoginPoint = (e: MouseEvent) => {
 }
 
 const onThLoginMouse = (type: 'down' | 'move' | 'up', e: MouseEvent) => {
-  if (type === 'down') thLoginPressed = true
+  if (type === 'down') {
+    thLoginPressed = true
+    // mousedown.prevent keeps the image from dragging, so focus the keyboard target explicitly.
+    thLoginImg.value?.parentElement?.focus({ preventScroll: true })
+  }
   if (type === 'up') {
     if (!thLoginPressed) return
     thLoginPressed = false
@@ -1422,6 +1444,19 @@ const pyApi = async (method: string, ...args: any[]) => {
   }
 }
 
+const openExternal = async (url: string) => {
+  if (!window.pywebview?.api) {
+    window.open(url, '_blank', 'noopener,noreferrer')
+    return
+  }
+  try {
+    const result = await pyApi('open_external_link', url)
+    if (!result?.success) ElMessage.error(result?.msg || '链接打开失败')
+  } catch {
+    ElMessage.error('链接打开失败，请稍后重试')
+  }
+}
+
 window.updateProgress = (id: string, desc: string, n: number, total: number) => {
   progressBars.value[id] = { desc, n, total }
 }
@@ -1443,6 +1478,8 @@ const loadConfig = async () => {
       return Object.assign(target || {}, source)
     }
     config.value = mergeObj(config.value, res.data)
+    const savedTheme = config.value.appearance.theme
+    if (isThemeMode(savedTheme)) setTheme(savedTheme)
   }
 }
 
@@ -1729,321 +1766,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
+  stopThLoginView()
 })
 </script>
-
-<style>
-.th-login-hint {
-  margin-bottom: 10px;
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
-.th-login-stage {
-  outline: none;
-  display: flex;
-  justify-content: center;
-  border: 1px solid var(--el-border-color);
-  border-radius: 6px;
-  overflow: hidden;
-  background: #fff;
-  min-height: 300px;
-}
-.th-login-frame {
-  width: 100%;
-  display: block;
-  cursor: pointer;
-  user-select: none;
-}
-.th-login-loading {
-  align-self: center;
-  color: var(--el-text-color-secondary);
-}
-
-html,
-body,
-#app {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  width: 100%;
-  max-width: 100%;
-  text-align: left;
-  border: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    sans-serif;
-}
-
-body {
-  background-color: var(--el-bg-color-page);
-  color: var(--el-text-color-primary);
-  transition: background-color 0.3s ease;
-}
-
-.layout-container {
-  height: 100vh;
-}
-
-.aside {
-  background-color: #304156;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  user-select: none;
-}
-
-.logo {
-  padding: 14px 12px 12px;
-  text-align: center;
-  border-bottom: 1px solid #1f2d3d;
-}
-
-.logo-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-  vertical-align: -5px;
-}
-
-.logo h3 {
-  margin: 0;
-  color: #fff;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.logo-sub {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  color: #909399;
-}
-
-/* 平台切换器 */
-.platform-switcher {
-  padding: 12px 12px 10px;
-  border-bottom: 1px solid #1f2d3d;
-}
-
-.switcher-label {
-  font-size: 11px;
-  color: #889aa4;
-  margin-bottom: 8px;
-  padding-left: 2px;
-}
-
-.switcher-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  background-color: #263445;
-  padding: 4px;
-  border-radius: 6px;
-}
-
-.platform-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  border: none;
-  border-radius: 4px;
-  padding: 7px 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #bfcbd9;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.platform-btn:hover {
-  color: #ffffff;
-}
-
-.platform-btn.active {
-  background-color: #409eff;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.35);
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.status-dot.running {
-  background-color: #67c23a;
-  box-shadow: 0 0 6px #67c23a;
-}
-
-.status-dot.waiting {
-  background-color: #e6a23c;
-  box-shadow: 0 0 6px #e6a23c;
-}
-
-.side-menu {
-  border-right: none;
-  flex: 1;
-}
-
-.menu-badge {
-  margin-left: auto;
-}
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 0;
-  border-top: 1px solid #1f2d3d;
-}
-
-.theme-label {
-  color: #bfcbd9;
-  font-size: 13px;
-}
-
-.main-content {
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.aligned-form {
-  max-width: 640px;
-}
-
-.config-actions {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--el-border-color-lighter);
-  display: flex;
-  gap: 12px;
-}
-
-.catalog-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.toolbar-filters {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.dashboard {
-  display: flex;
-  flex-direction: column;
-}
-
-.th-status-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  border-radius: 6px;
-  background-color: var(--el-fill-color-light);
-  font-size: 13px;
-}
-
-.th-status-msg {
-  color: var(--el-text-color-primary);
-  font-weight: 500;
-}
-
-.th-status-meta {
-  color: var(--el-text-color-secondary);
-}
-
-.empty-progress {
-  color: var(--el-text-color-secondary);
-  text-align: center;
-  padding: 16px 0;
-  font-size: 13px;
-}
-
-.progress-bar-wrapper {
-  margin-bottom: 15px;
-}
-
-.progress-label {
-  font-size: 13px;
-  margin-bottom: 6px;
-  color: var(--el-text-color-regular);
-}
-
-.log-container {
-  height: calc(100vh - 380px);
-  min-height: 220px;
-  overflow-y: auto;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-  padding: 12px;
-  border-radius: 4px;
-  font-family: Consolas, Monaco, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.log-empty {
-  color: #777;
-  font-style: italic;
-}
-
-.log-item {
-  margin-bottom: 4px;
-  word-break: break-all;
-}
-
-.field-hint {
-  width: 100%;
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--el-text-color-secondary);
-}
-
-.advanced-collapse {
-  margin: 8px 0 18px 150px;
-  width: calc(100% - 150px);
-  border-top: none;
-}
-</style>

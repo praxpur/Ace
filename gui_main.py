@@ -16,6 +16,7 @@ import traceback
 import builtins
 import tqdm
 from treehouse_bridge import TreehouseBridge, normalize_treehouse_options
+from desktop_tray import DesktopTray
 
 # 配置文件放在 exe（或脚本）所在目录，避免 cwd 不可写时静默失败
 if getattr(sys, 'frozen', False):
@@ -194,6 +195,7 @@ class Api(TreehouseBridge):
         # Prefix all internal states with underscore '_' so pywebview won't serialize them!
         self._chaoxing = None
         self._config = {
+            "appearance": {"theme": "system"},
             "common": {
                 "username": "",
                 "password": "",
@@ -276,6 +278,21 @@ class Api(TreehouseBridge):
 
     def get_config(self):
         return {"success": True, "data": self._config}
+
+    def open_external_link(self, url):
+        allowed = {
+            "https://github.com/praxpur", "https://github.com/praxpur/Ace",
+            "https://praxpur.figma.site", "mailto:fnme370679@gmail.com",
+            "https://github.com/Samueli924/chaoxing", "https://github.com/praxpur/Treehouse-Course",
+        }
+        if not isinstance(url, str) or url not in allowed:
+            return {"success": False, "msg": "不支持的链接"}
+        import webbrowser
+        try:
+            opened = webbrowser.open(url)
+            return {"success": bool(opened), "msg": "" if opened else "无法打开系统默认应用"}
+        except Exception:
+            return {"success": False, "msg": "无法打开系统默认应用"}
 
     def test_api_connection(self, config_str):
         try:
@@ -384,7 +401,7 @@ class Api(TreehouseBridge):
         with ui_lock:
             progress_state.clear()
         
-        self._running_thread = threading.Thread(target=self._run_tasks_thread, args=(course_ids,))
+        self._running_thread = threading.Thread(target=self._run_tasks_thread, args=(course_ids,), daemon=True)
         self._running_thread.start()
         
         return {"success": True, "msg": "任务已在后台启动"}
@@ -505,7 +522,7 @@ def setup_logger():
     sys.stdout = StdoutRedirector()
     sys.stderr = StdoutRedirector()
 
-TITLEBAR_COLOR = '#304156'  # 与侧边栏同色，让原生标题栏和应用融为一体
+TITLEBAR_COLOR = '#142E2D'  # 与侧边栏同色，让原生标题栏和应用融为一体
 TITLEBAR_TEXT = '#E5EAF3'
 
 
@@ -555,11 +572,14 @@ def main():
         sys.exit(1)
 
     window = webview.create_window(
-        '分刷酱', url=dist_path, js_api=api, width=1120, height=780,
+        '分刷酱 · Ace', url=dist_path, js_api=api, width=1120, height=780,
         min_size=(900, 620), background_color=TITLEBAR_COLOR,
     )
     window.events.shown += lambda: apply_titlebar_theme(window)
     icon = os.path.join(base_dir, 'packaging', 'assets', 'app.ico')
+    tray = DesktopTray(window, api, icon)
+    window.events.shown += tray.start
+    window.events.closed += tray.closed
     webview.start(debug=False, icon=icon if os.path.isfile(icon) else None)
 
 

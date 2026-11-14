@@ -1,77 +1,54 @@
-"""生成「分刷酱」图标：对角“分”开的两色圆角方块（两个平台合一）+ 白色对勾（刷完）+ 星光。
-
-输出到 packaging/assets/：logo.svg、logo.png(1024)、app.ico、logo_preview.png。
-同时同步 gui_dist/favicon.svg 与 frontend/public/favicon.svg。
-用法：python packaging/build_logo_ico.py
-"""
+"""Build the vector book/play mark and matching Windows icons, without external fonts."""
 from pathlib import Path
 from PIL import Image, ImageDraw
 
-HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
-ASSETS = HERE / "assets"
-CANVAS, SCALE = 1024, 4
+ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / "packaging" / "assets"
 SIZES = (16, 24, 32, 48, 64, 128, 256)
-BLUE, TEAL, WHITE, PINK = "#3730A3", "#14B8A6", "#FFFFFF", "#FDE68A"
-RECT = (48, 48, 976, 976)
-RADIUS = 220
-# 对角线：左下半 BLUE（右上半 TEAL），线从右上角到左下角附近
-SPLIT = [(976, 48), (976, 976), (48, 976)]  # 右下三角（用 TEAL 覆盖）
-CHECK = [(268, 540), (452, 724), (780, 340)]
-STAR = [(770, 130), (803, 226), (899, 259), (803, 292), (770, 388), (737, 292), (641, 259), (737, 226)]
-CHECK_W = 96
-
-
-def s(pts):
-    return [(x * SCALE, y * SCALE) for x, y in pts]
-
-
-def render():
-    n = CANVAS * SCALE
-    mask = Image.new("L", (n, n), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([v * SCALE for v in RECT], radius=RADIUS * SCALE, fill=255)
-    base = Image.new("RGBA", (n, n), BLUE)
-    ImageDraw.Draw(base).polygon(s(SPLIT), fill=TEAL)
-    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    img.paste(base, mask=mask)
-    d = ImageDraw.Draw(img)
-    d.line(s(CHECK), fill=WHITE, width=CHECK_W * SCALE, joint="curve")
-    r = CHECK_W * SCALE // 2
-    for x, y in (CHECK[0], CHECK[-1]):
-        d.ellipse((x * SCALE - r, y * SCALE - r, x * SCALE + r, y * SCALE + r), fill=WHITE)
-    d.polygon(s(STAR), fill=PINK)
-    return img.resize((CANVAS, CANVAS), Image.Resampling.LANCZOS)
+INK, PAPER, MINT, AMBER = "#142E2D", "#EFF4E6", "#A8DCC2", "#E8BB71"
+LEFT = [(27, 32), (59, 40), (59, 96), (27, 87)]
+RIGHT = [(66, 40), (101, 30), (101, 85), (66, 96)]
+PLAY = [(77, 50), (77, 75), (92, 62)]
+BOOKMARK = [(37, 29), (44, 31), (44, 53), (40.5, 49), (37, 51)]
 
 
 def svg():
-    pts = lambda p: " ".join(f"{x},{y}" for x, y in p)
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <defs><clipPath id="c"><rect x="48" y="48" width="928" height="928" rx="{RADIUS}"/></clipPath></defs>
-  <g clip-path="url(#c)">
-    <rect width="1024" height="1024" fill="{BLUE}"/>
-    <polygon points="{pts(SPLIT)}" fill="{TEAL}"/>
-  </g>
-  <polyline points="{pts(CHECK)}" fill="none" stroke="{WHITE}" stroke-width="{CHECK_W}" stroke-linecap="round" stroke-linejoin="round"/>
-  <polygon points="{pts(STAR)}" fill="{PINK}"/>
+    points = lambda values: " ".join(f"{x},{y}" for x, y in values)
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect x="4" y="4" width="120" height="120" rx="31" fill="{INK}"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="30.5" stroke="{MINT}" stroke-opacity=".18"/>
+  <polygon points="{points(LEFT)}" fill="{PAPER}"/>
+  <polygon points="{points(RIGHT)}" fill="{MINT}"/>
+  <polygon points="{points(BOOKMARK)}" fill="{AMBER}"/>
+  <polygon points="{points(PLAY)}" fill="{INK}" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>
 </svg>
 '''
 
 
+def render():
+    scale = 24
+    image = Image.new("RGBA", (128 * scale, 128 * scale), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle(tuple(v * scale for v in (4, 4, 124, 124)), radius=31 * scale,
+                           fill=INK, outline="#35554A", width=scale)
+    for shape, color in ((LEFT, PAPER), (RIGHT, MINT), (BOOKMARK, AMBER), (PLAY, INK)):
+        draw.polygon([(round(x * scale), round(y * scale)) for x, y in shape], fill=color)
+    return image.resize((1024, 1024), Image.Resampling.LANCZOS)
+
+
 def main():
     ASSETS.mkdir(parents=True, exist_ok=True)
-    text = svg()
-    (ASSETS / "logo.svg").write_text(text, encoding="utf-8")
-    for p in (ROOT / "gui_dist" / "favicon.svg", ROOT / "frontend" / "public" / "favicon.svg"):
-        if p.parent.exists():
-            p.write_text(text, encoding="utf-8")
+    for path in (ASSETS / "logo.svg", ROOT / "frontend/public/favicon.svg"):
+        path.write_text(svg(), encoding="utf-8")
     image = render()
     image.save(ASSETS / "logo.png")
-    image.save(ASSETS / "app.ico", format="ICO", sizes=[(z, z) for z in SIZES])
-    preview = Image.new("RGBA", (1120, 360), "#F7F2FA")
+    image.save(ASSETS / "app.ico", format="ICO", sizes=[(size, size) for size in SIZES])
+    preview = Image.new("RGBA", (1120, 360), "#F3F5F2")
     for x, size in [(32, 256), (336, 128), (512, 64), (624, 48), (720, 32), (800, 24), (872, 16)]:
-        preview.alpha_composite(image.resize((size, size), Image.Resampling.LANCZOS), (x, 52 + (256 - size) // 2))
+        preview.alpha_composite(image.resize((size, size), Image.Resampling.LANCZOS),
+                                (x, 52 + (256 - size) // 2))
     preview.convert("RGB").save(ASSETS / "logo_preview.png")
-    print("done")
+    print("Generated SVG, PNG and Windows icon sizes 16–256")
 
 
 if __name__ == "__main__":
