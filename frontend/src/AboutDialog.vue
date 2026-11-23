@@ -2,7 +2,7 @@
   <el-dialog v-model="open" title="关于分刷酱 · Ace" width="640px" align-center append-to-body class="about-dialog">
     <div class="about-brand">
       <img src="/favicon.svg" alt="分刷酱 Logo" />
-      <div><span class="eyebrow">ACE / COURSE WORKSPACE</span><h2>分刷酱 <em class="about-english-name">Ace</em> <span>0.1.0</span></h2><p>课程任务，一处管理。</p></div>
+      <div><span class="eyebrow">ACE / COURSE WORKSPACE</span><h2>分刷酱 <em class="about-english-name">Ace</em> <span>0.2.0</span></h2><p>课程任务，一处管理。</p></div>
     </div>
     <div class="developer-card">
       <div class="developer-heading"><span class="developer-avatar">P</span><div><span class="eyebrow">DESIGNED & BUILT BY</span><h3>praxpur <span>开发者</span></h3></div></div>

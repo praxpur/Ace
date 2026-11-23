@@ -166,15 +166,23 @@ class ZhihuishuAdapter:
 
     def resource_records(self, scope) -> list[CatalogRecord]:
         records = []
-        for index, item in enumerate(self._visible(
-                scope.get_by_text(re.compile(r"\.mp4\b", re.IGNORECASE)))):
+        mp4_re = re.compile(r"\.mp4\b", re.IGNORECASE)
+        tree_items = self._visible(scope.locator('[role="treeitem"]'))
+        candidates = []
+        for item in tree_items:
+            if item.locator('[role="treeitem"]').count() == 0 and mp4_re.search(item.inner_text()):
+                candidates.append(item)
+        if not candidates:
+            candidates = self._visible(scope.get_by_text(mp4_re))
+        for index, item in enumerate(candidates):
             raw_text = item.inner_text()
             label = resource_title(raw_text)
             if not label:
                 continue
             detail = normalize_text(raw_text).replace(label, "", 1).strip()[:240]
             completed = item.evaluate("""e => {
-                const row = e.closest('.resource-item') || e.parentElement;
+                const row = e.closest('.resource-item')
+                    || (e.matches('[role="treeitem"]') ? e : e.parentElement);
                 if (!row) return null;
                 // A chapter container can contain several resources; its
                 // progress must not be attributed to a particular video.
@@ -182,6 +190,11 @@ class ZhihuishuAdapter:
                 const lines = (row.innerText || '').split(/\\r?\\n/).map(s => s.trim());
                 if (lines.includes('已完成')) return true;
                 if (lines.includes('未完成')) return false;
+                const checkbox = row.querySelector('.el-checkbox');
+                if (checkbox) {
+                    if (checkbox.classList.contains('success')) return true;
+                    if (checkbox.classList.contains('info')) return false;
+                }
                 const bar = row.querySelector('[role="progressbar"][aria-valuenow]');
                 if (!bar) return null;
                 const raw = bar.getAttribute('aria-valuenow').trim();
@@ -190,9 +203,15 @@ class ZhihuishuAdapter:
                 return raw && Number.isFinite(value) && Number.isFinite(max)
                     && max > 0 && value >= 0 && value <= max ? value >= max : null;
             }""")
+            click_target = item
+            for selector in (".file-name", ".custom-tree-node", ".el-tree-node__content"):
+                inner = self._visible(item.locator(selector))
+                if inner:
+                    click_target = inner[0]
+                    break
             # Identical filenames are retained as distinct rows, not silently dropped.
             records.append(CatalogRecord(
-                Choice(f"video:{index}", label, detail), item, catalog_signature(item), completed
+                Choice(f"video:{index}", label, detail), click_target, catalog_signature(click_target), completed
             ))
         return records
 
@@ -216,8 +235,8 @@ class ZhihuishuAdapter:
         is_center = host == self.profile.center_host and path == self.profile.center_path
         is_resources = host == self.profile.resource_host and path == self.profile.resource_path
         is_video = host == self.profile.video_host and path == self.profile.video_path
-        is_ai_video = host == self.profile.center_host and bool(re.fullmatch(
-            r"/agent-course-full/[^/]+/[^/]+/[^/]+/[^/]+/stu/study/resource-detail", path
+        is_ai_video = host == self.profile.center_host and bool(re.search(
+            r"/agent-course-full/[^/]+/[^/]+/[^/]+/[^/]+/stu/study/resource-detail$", path
         ))
         is_home = host == self.profile.center_host and bool(re.search(
             r"/agent-course-full/[^/]+/stu/course-home$", path
@@ -334,7 +353,8 @@ class ZhihuishuAdapter:
                 ))
                 stable_count = stable_count + 1 if key == stable_key else 1
                 stable_key = key
-                if stable_count >= 2:
+                required_stable = 15 if ready.kind == PageKind.EMPTY else 2
+                if stable_count >= required_stable:
                     if self.login_hook:
                         self.login_hook.close()
                     return ready

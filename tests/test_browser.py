@@ -167,6 +167,24 @@ class BrowserTests(unittest.TestCase):
         probe = self.wait_ready({PageKind.RESOURCES})
         self.assertEqual([row.completed for row in probe.records], [True, False, None])
 
+    def test_tree_resource_records_use_leaf_rows_completion_and_play_target(self):
+        self.page.goto(self.server.origin + RESOURCES)
+        self.page.set_content('''<main>学习资源
+          <div class="el-tree-node" role="treeitem"><div class="el-tree-node__content">第1章</div>
+            <div role="group">
+              <div class="el-tree-node" role="treeitem"><div class="el-tree-node__content custom-tree-node"><span class="file-name">完成.mp4 已完成</span><span class="el-checkbox success"></span></div></div>
+              <div class="el-tree-node" role="treeitem"><div class="el-tree-node__content custom-tree-node"><span class="file-name">未完成.mp4 未完成</span><span class="el-checkbox info"></span></div></div>
+              <div class="el-tree-node" role="treeitem"><div class="el-tree-node__content custom-tree-node"><span class="file-name">未知.mp4</span></div></div>
+            </div>
+          </div>
+        </main>''')
+        probe = self.adapter.probe_page(self.page)[0]
+        self.assertEqual(probe.kind, PageKind.RESOURCES)
+        self.assertEqual([row.completed for row in probe.records], [True, False, None])
+        self.assertEqual([row.choice.label for row in probe.records], ['完成.mp4', '未完成.mp4', '未知.mp4'])
+        self.assertTrue(all(row.locator.get_attribute('class').find('el-tree-node__content') >= 0
+                            for row in probe.records))
+
     def test_shared_switch_waits_for_media_source_not_just_highlight(self):
         self.page.goto(self.server.origin + SHARED)
         probe = self.wait_ready({PageKind.RESOURCES})

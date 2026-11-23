@@ -161,6 +161,9 @@ myConfig/
 # GUI App
 gui_dist/
 gui_config.json
+cookies.txt
+debug.log
+debug*.log
 .state/
 .runtime/
 artifacts/

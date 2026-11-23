@@ -33,3 +33,5 @@ pyinstaller --noconfirm --clean Fenshuajiang.spec
 ```
 
 `Fenshuajiang.spec` 使用相对路径引用本目录的 `assets/app.ico` 和 `version_info.txt`，因此打包命令需在项目根目录执行。
+
+公开发布包不包含 `gui_config.json`、`cookies.txt`、`.state/` 或运行日志。通过 `v*` 标签触发 GitHub Actions 时，CI 会构建前端、运行 Python 检查、打包 Windows 便携版并附上 SHA-256 校验文件。

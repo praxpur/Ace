@@ -4,7 +4,9 @@ Ace（分刷酱）在一个桌面窗口提供超星学习通和智慧树课程�
 
 ## 使用
 
-需要 Windows、Python 3.13+、Node.js 和 Playwright Chromium。
+源码运行需要 Windows、Python 3.13+、Node.js 和 Playwright Chromium。普通使用者可从 GitHub Releases 下载已打包的 Windows 便携版。
+
+Windows 发布版：[Ace 0.2.0](https://github.com/praxpur/Ace/releases/latest)。首次运行时配置会在应用目录中新建；登录信息与 cookies 仅保存在本机，请勿分享个人配置文件。
 
 ```powershell
 python -m pip install -r requirements.txt

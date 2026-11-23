@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fenshuajiang"
-version = "0.1.0"
+version = "0.2.0"
 description = "Ace（分刷酱）· 超星学习通与智慧树统一桌面客户端"
 readme = "README.md"
 license = { file = "LICENSE" }

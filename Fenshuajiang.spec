@@ -18,6 +18,8 @@ if not browsers:
     raise RuntimeError('Set PLAYWRIGHT_BROWSERS_PATH to an installed Playwright Chromium cache')
 browser = browsers[-1].parents[1]
 datas.append((str(browser), f'browsers/{browser.name}'))
+# Runtime Chromium contains no user profile or account state. Keep it separate
+# from build caches and from the application's per-user config directory.
 
 a = Analysis(
     ['gui_main.py'],
@@ -39,4 +41,6 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='分刷酱',
           target_arch=None, codesign_identity=None, entitlements_file=None,
           icon=['packaging/assets/app.ico'], version='packaging/version_info.txt')
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False,
-               upx_exclude=[], name='分刷酱')
+               upx_exclude=[], name='分刷酱', exclude_binaries=[],
+               filter=lambda src, dest: not Path(dest).as_posix().lower().endswith(
+                   ('/gui_config.json', '/cookies.txt', '/chaoxing.log', '/debug.log')))
